@@ -1,0 +1,37 @@
+rag_system/
+│
+├── app.py                      # 🌐 Main Flask web application entry point
+│
+├── core/
+│   ├── __init__.py
+│   ├── orchestrator.py         # 🧠 The central controller for the RAG flow
+│   └── components/
+│       ├── __init__.py
+│       ├── query_translator.py   # Decomposes/re-phrases questions (HyDE, RAG-Fusion)
+│       ├── router.py             # Decides which data source to use
+│       ├── query_constructor.py  # Builds specific queries (Text-to-SQL, etc.)
+│       ├── retriever.py          # Fetches, re-ranks, and refines documents
+│       └── generator.py          # Generates the final answer using an LLM
+│
+├── data_stores/
+│   ├── __init__.py
+│   └── vector_store_connector.py  # Handles connection and querying for Vector DB
+│
+├── indexing/
+│   ├── __init__.py
+│   ├── build_vector_store.py     # 📜 Script to create and save the vector index
+│   └── utils/
+│       ├── __init__.py
+│       ├── splitters.py          # Custom text splitters (e.g., Semantic Splitter)
+│       └── converter.py          # Custom text converter (e.g., Text-to-json)
+│       
+├── static/
+│   └── css/
+│       └── style.css             # Basic styling for the webpage
+│
+├── templates/
+│   └── index.html                # Simple HTML front-end
+│
+├── config.py                     # API keys, database URIs, model names
+├── requirements.txt              # Project dependencies (Flask, LangChain, etc.)
+└── .env                          # Securely store API keys (add to .gitignore)
