@@ -4,15 +4,14 @@ import os
 from typing import List
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from indexing.utils.reader import Reader
-from indexing.utils.splitters import TextSplitter
+from src.indexing.utils.reader import Reader
 from langchain_community.llms import Ollama
+from src.indexing.utils.splitters import TextSplitter
+
 class VectorIndexBuilder:
     """
     Builds and manages vector indices for document retrieval
     """
-    
     def __init__(self):
         """
         Initialize the vector index builder
@@ -31,13 +30,14 @@ class VectorIndexBuilder:
         self._load_vectorstore()
         self.reader = Reader(self.llm)
         self.splitter = TextSplitter()
+        self.K = 3  # Number of top documents to retrieve
 
     def add_documents(self, documents_path: str):
         """
         Adds new documents to the existing vector store.
         """
         documents = self.reader.read(documents_path)
-        splitted_doc = self.splitter.split_documents(documents)
+        splitted_doc = self.splitter.chunking_text(documents)
 
         if self.vectorstore is None:
             print("Vector store not initialized. Creating a new one...")
@@ -51,8 +51,6 @@ class VectorIndexBuilder:
         print(f"Successfully added {len(splitted_doc)} new document chunks.")
 
     def create_from_documents(self, splitted_doc, chunk_size=1000, chunk_overlap=200):
-        print(f"Created {len(splitted_doc)} document chunks.")
-
         print(f"Creating vector store in '{self.persist_directory}'...")
         self.vectorstore = Chroma.from_documents(
             documents=splitted_doc,
@@ -61,11 +59,20 @@ class VectorIndexBuilder:
         )
         print("Vector store created successfully.")
 
-    def load_documents(self, document_paths: List[str]) -> List[str]:
+    def retrieve(self, search_type="similarity") -> List[str]:
         """
         Load and extract text from documents
         """
-        pass
+        if self.vectorstore is None:
+            # If the vector store isn't created yet, try to load it from disk
+            print(f"Vector store not created. Loading from '{self.persist_directory}'...")
+            self._load_vectorstore()
+            print("Vector store loaded successfully.")
+        
+        return self.vectorstore.as_retriever(
+            search_type=search_type,
+            search_kwargs={"k": self.K}
+        )
     
     def save_index(self, index_path: str) -> bool:
         """

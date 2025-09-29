@@ -11,40 +11,41 @@ from langchain.llms import Ollama
 from langchain.chains.question_answering import load_qa_chain
 from langchain_core.runnables import RunnablePassthrough
 import config  # Activates loading of environment variables
-
+from src.indexing.build_vector_store import VectorIndexBuilder 
 # Function to extract text from PDF
-def extract_text_from_pdf(pdf_path):
-    reader = PdfReader(pdf_path)
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text()
-    return text
+# def extract_text_from_pdf(pdf_path):
+#     reader = PdfReader(pdf_path)
+#     text = ""
+#     for page in reader.pages:
+#         text += page.extract_text()
+#     return text
 
 
 # Function to create FAISS vector store
-def create_faiss_vector_store(text, path="faiss_index"):
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    chunks = splitter.split_text(text)
+# def create_faiss_vector_store(text, path="faiss_index"):
+#     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+#     chunks = splitter.split_text(text)
 
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    vector_store = FAISS.from_texts(chunks, embedding=embeddings)
-    vector_store.save_local(path)
+#     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+#     vector_store = FAISS.from_texts(chunks, embedding=embeddings)
+#     vector_store.save_local(path)
 
 
 # Load FAISS vector store
-def load_faiss_vector_store(path="faiss_index"):
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    vector_store = FAISS.load_local(path, embeddings,  
-                 allow_dangerous_deserialization=True)
-    return vector_store
+# def load_faiss_vector_store(path="faiss_index"):
+#     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+#     vector_store = FAISS.load_local(path, embeddings,  
+#                  allow_dangerous_deserialization=True)
+#     return vector_store
 
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 # Build QA Chain
-def build_qa_chain(vector_store_path="faiss_index"):
-    vector_store = load_faiss_vector_store(vector_store_path)
-    retriever = vector_store.as_retriever()
+def build_qa_chain(vector_db: VectorIndexBuilder):
+    # vector_store = load_faiss_vector_store(vector_store_path)
+    # retriever = vector_store.as_retriever()
+    retriever = vector_db.retrieve()
     llm = Ollama(model="llama3.2")
     prompt = hub.pull("rlm/rag-prompt")
     # Chain using Runnable API
@@ -65,19 +66,19 @@ uploaded_file = st.file_uploader("Upload your PDF file", type="pdf")
 
 
 if uploaded_file is not None:
-    pdf_path = f"uploaded/{uploaded_file.name}"
+    pdf_path = f"/res/uploaded/{uploaded_file.name}"
     os.makedirs("uploaded", exist_ok=True)
 
     with open(pdf_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
+    vector_db = VectorIndexBuilder()
+    # text = extract_text_from_pdf(pdf_path)
 
-    text = extract_text_from_pdf(pdf_path)
-
-    st.info("Creating FAISS vector store...")
-    create_faiss_vector_store(text)
+    st.info("Creating Chroma vector store...")
+    vector_db.add_documents(pdf_path)
 
     st.info("Initializing chatbot...")
-    rag_chain = build_qa_chain()
+    rag_chain = build_qa_chain(vector_db)
     st.success("Chatbot is ready!")
 
 

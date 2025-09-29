@@ -2,7 +2,7 @@
 
 from typing import List, Dict, Any, Optional
 import re
-
+from langchain.schema import Document
 import os
 from typing import List, Dict, Any
 import streamlit as st
@@ -39,10 +39,10 @@ class TextSplitter:
             model_name: Embedding model for similarity calculation
             similarity_threshold: Threshold for semantic similarity
         """
-        self.chunk_size = 1000
-        self.chunk_overlap = 200
-    
-    def chunking_text(self, text: str) -> List[str]:
+        self.CHUNK_SIZE = 2000
+        self.CHUNK_OVERLAP = 500
+
+    def chunking_text(self, text) -> List[str]:
         """
         Split text based on semantic similarity
         
@@ -52,11 +52,12 @@ class TextSplitter:
         Returns:
             List of semantically coherent text chunks
         """
+        documents = [Document(page_content=text)]
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=self.chunk_size,
-            chunk_overlap=self.chunk_overlap
+            chunk_size=self.CHUNK_SIZE,
+            chunk_overlap=self.CHUNK_OVERLAP
         )
-        splitted_text = text_splitter.split_documents(text)
+        splitted_text = text_splitter.split_documents(documents)
         return splitted_text
 
     def calculate_sentence_similarities(self, sentences: List[str]) -> List[float]:
