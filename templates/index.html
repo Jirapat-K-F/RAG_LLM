@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG System - Retrieval Augmented Generation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="header">
+        <h1>🧠 RAG System</h1>
+        <p>Retrieval Augmented Generation with Multi-Modal Data Sources</p>
+    </header>
+
+    <div class="container">
+        <!-- Query Input Section -->
+        <section class="query-section">
+            <h2>Ask Your Question</h2>
+            <form id="queryForm" method="POST" action="/query">
+                <textarea 
+                    id="queryInput" 
+                    name="query" 
+                    class="query-input" 
+                    placeholder="Enter your question here... (e.g., 'What is machine learning?', 'Show me sales data for Q3', 'Find relationships between concepts')"
+                    required></textarea>
+                <button type="submit" class="submit-btn">🔍 Search & Generate Answer</button>
+            </form>
+        </section>
+
+        <!-- Loading Section -->
+        <section id="loadingSection" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <span style="margin-left: 1rem;">Processing your query...</span>
+        </section>
+
+        <!-- Results Section -->
+        <section id="resultsSection" class="results-section">
+            <h2>Generated Answer</h2>
+            <div id="answerBox" class="answer-box">
+                <!-- Answer will be displayed here -->
+            </div>
+            
+            <div class="source-documents">
+                <h3>📚 Source Documents</h3>
+                <div id="sourcesList">
+                    <!-- Source documents will be listed here -->
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.getElementById('queryForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const query = document.getElementById('queryInput').value;
+            const loadingSection = document.getElementById('loadingSection');
+            const resultsSection = document.getElementById('resultsSection');
+            
+            // Show loading, hide results
+            loadingSection.style.display = 'flex';
+            resultsSection.classList.remove('show');
+            
+            // Send query to backend
+            fetch('/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query: query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading
+                loadingSection.style.display = 'none';
+                
+                // Display results
+                document.getElementById('answerBox').innerHTML = data.answer || 'No answer generated.';
+                
+                // Display source documents
+                const sourcesList = document.getElementById('sourcesList');
+                sourcesList.innerHTML = '';
+                
+                if (data.sources && data.sources.length > 0) {
+                    data.sources.forEach((source, index) => {
+                        const sourceDiv = document.createElement('div');
+                        sourceDiv.className = 'source-item';
+                        sourceDiv.innerHTML = `
+                            <strong>Source ${index + 1}:</strong> ${source.title || 'Document'}<br>
+                            <em>${source.content.substring(0, 200)}...</em>
+                        `;
+                        sourcesList.appendChild(sourceDiv);
+                    });
+                } else {
+                    sourcesList.innerHTML = '<p>No source documents available.</p>';
+                }
+                
+                // Show results
+                resultsSection.classList.add('show');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loadingSection.style.display = 'none';
+                
+                document.getElementById('answerBox').innerHTML = 'An error occurred while processing your query.';
+                resultsSection.classList.add('show');
+            });
+        });
+    </script>
+</body>
+</html>

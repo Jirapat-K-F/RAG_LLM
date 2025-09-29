@@ -1,0 +1,66 @@
+# # Project dependencies for the RAG system
+
+# # Web Framework
+# Flask==3.0.0
+# Flask-CORS==4.0.0
+
+# # LangChain and LLM libraries
+# langchain==0.1.0
+# langchain-community==0.0.10
+# langchain-core==0.1.0
+# langchain-experimental==0.0.50
+
+# # LLM and Embedding Models
+# ollama==0.1.7
+# sentence-transformers==2.2.2
+# transformers==4.36.0
+# torch>=1.11.0
+
+# # Vector Stores
+# faiss-cpu==1.7.4
+# chromadb==0.4.15
+# pinecone-client==2.2.4
+
+# # Graph Database
+# neo4j==5.15.0
+
+# # Document Processing
+# PyPDF2==3.0.1
+# python-docx==0.8.11
+# python-pptx==0.6.21
+# markdown==3.5.1
+
+# # Text Processing
+# spacy>=3.7.0
+# nltk>=3.8.0
+# beautifulsoup4==4.12.2
+# lxml==4.9.3
+
+# # Database
+# SQLAlchemy==2.0.23
+# sqlite3  # Built-in with Python
+
+# # Data Processing
+# pandas==2.1.4
+# numpy==1.24.3
+
+# # Utility Libraries
+# python-dotenv==1.0.0
+# pydantic==2.5.0
+# requests==2.31.0
+
+# # Development and Testing
+# pytest==7.4.3
+# pytest-cov==4.1.0
+# black==23.11.0
+# flake8==6.1.0
+
+# # Optional: Jupyter for experimentation
+# jupyter==1.0.0
+# ipykernel==6.27.1
+
+# # Optional: Advanced NLP
+# spacy-transformers==1.3.4
+
+# # Optional: Monitoring and Logging
+# langsmith==0.0.69

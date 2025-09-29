@@ -52,6 +52,9 @@ pip install -U langchain-community
 
 ### 3. Launch the Chatbot
 
+start virtual env
+".\.venv\Scripts\Activate"                                                         
+
 Start the Streamlit app:
 ```
 streamlit run app.py
