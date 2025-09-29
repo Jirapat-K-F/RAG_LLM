@@ -59,7 +59,7 @@ class VectorIndexBuilder:
         )
         print("Vector store created successfully.")
 
-    def retrieve(self, search_type="similarity") -> List[str]:
+    def retrieve(self, query: str, search_type="similarity") -> List[str]:
         """
         Load and extract text from documents
         """
@@ -68,12 +68,13 @@ class VectorIndexBuilder:
             print(f"Vector store not created. Loading from '{self.persist_directory}'...")
             self._load_vectorstore()
             print("Vector store loaded successfully.")
-        
-        return self.vectorstore.as_retriever(
+        retriever = self.vectorstore.as_retriever(
             search_type=search_type,
             search_kwargs={"k": self.K}
         )
-    
+        # docs = retriever.get_relevant_documents(query)
+        return retriever
+
     def save_index(self, index_path: str) -> bool:
         """
         Save the vector index to disk

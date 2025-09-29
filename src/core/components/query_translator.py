@@ -20,7 +20,7 @@ class QueryTranslator:
         Returns:
             List of translated/decomposed queries
         """
-        pass
+        return query
     
     def hyde_transform(self, query: str) -> str:
         """

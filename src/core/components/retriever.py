@@ -1,5 +1,6 @@
 #4th step
 # Retriever - Fetches, re-ranks, and refines documents
+from src.indexing.build_vector_store import VectorIndexBuilder  
 
 class DocumentRetriever:
     """
@@ -8,9 +9,9 @@ class DocumentRetriever:
     
     def __init__(self):
         """Initialize the document retriever"""
-        pass
+        self.vector_store = VectorIndexBuilder()
     
-    def retrieve_documents(self, query: str, data_source: str, **kwargs) -> list:
+    def retrieve_documents(self, query: str) -> list:
         """
         Retrieve relevant documents from the specified data source
         
@@ -22,8 +23,8 @@ class DocumentRetriever:
         Returns:
             List of retrieved documents
         """
-        pass
-    
+        return self.vector_store.retrieve(query)
+
     def re_rank_documents(self, documents: list, query: str) -> list:
         """
         Re-rank retrieved documents by relevance

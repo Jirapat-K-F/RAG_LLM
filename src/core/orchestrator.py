@@ -1,10 +1,8 @@
 # 🧠 The central controller for the RAG flow
 from langchain.llms import Ollama
-from core.components.query_translator import QueryTranslator 
-from core.components.router import  QueryRouter
-from core.components.query_constructor import QueryConstructor
-from core.components.retriever import  DocumentRetriever
-from core.components.generator import AnswerGenerator
+from src.core.components.query_translator import QueryTranslator 
+from src.core.components.retriever import  DocumentRetriever
+from src.core.components.generator import AnswerGenerator
 
 import os
 
@@ -43,16 +41,17 @@ class RAGOrchestrator:
         
         # Step 2: Retrieve relevant documents for each translated query
         retriever = DocumentRetriever()
-        all_retrieved_docs = []
-        for tq in translated_queries:
-            docs = retriever.retrieve_documents(tq)
-            all_retrieved_docs.extend(docs)
+        docs = retriever.retrieve_documents(translated_queries)
         
         # Step 3: Generate answer using the LLM and retrieved documents
         answer_generator = AnswerGenerator(self.llm)
-        final_answer = answer_generator.generate_answer(query, all_retrieved_docs)
-        
-        return final_answer
+        answer = answer_generator.generate_answer(docs, query)
+
+        return answer
+
+    def invoke(self, query: str) -> str:
+        """Alias for process_query to match Runnable interface"""
+        return self.process_query(query)
 
     def _setup_langsmith_tracking(self):
         """Initialize LangSmith tracing"""
