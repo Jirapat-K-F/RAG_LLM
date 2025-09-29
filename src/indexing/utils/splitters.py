@@ -1,29 +1,9 @@
 # Custom text splitters (e.g., Semantic Splitter)
 
-from typing import List, Dict, Any, Optional
-import re
+from typing import List
 from langchain.schema import Document
-import os
-from typing import List, Dict, Any
-import streamlit as st
-from langchain import hub
-from langchain_core.output_parsers import StrOutputParser
-from PyPDF2 import PdfReader
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.chains import RetrievalQA
-from langchain.llms import Ollama
-from langchain.chains.question_answering import load_qa_chain
-from langchain_core.runnables import RunnablePassthrough
-import os
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-from langchain_chroma import Chroma
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema.runnable import RunnablePassthrough
-from langchain.schema.output_parser import StrOutputParser
-from langchain.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+
 class TextSplitter:
     """
     Splits text based on semantic boundaries rather than fixed chunk sizes
