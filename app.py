@@ -1,89 +1,47 @@
 import streamlit as st
 import os
-from PyPDF2 import PdfReader
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import FAISS
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.chains import RetrievalQA
+from langchain import hub
+from langchain_core.output_parsers import StrOutputParser
 from langchain.llms import Ollama
-from langchain.chains.question_answering import load_qa_chain
-
-
-
-
-# Function to extract text from PDF
-def extract_text_from_pdf(pdf_path):
-    reader = PdfReader(pdf_path)
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text()
-    return text
-
-
-# Function to create FAISS vector store
-def create_faiss_vector_store(text, path="faiss_index"):
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    chunks = splitter.split_text(text)
-
-
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    vector_store = FAISS.from_texts(chunks, embedding=embeddings)
-    vector_store.save_local(path)
-
-
-# Load FAISS vector store
-def load_faiss_vector_store(path="faiss_index"):
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    vector_store = FAISS.load_local(path, embeddings,  
-                 allow_dangerous_deserialization=True)
-    return vector_store
-
-
-# Build QA Chain
-def build_qa_chain(vector_store_path="faiss_index"):
-    vector_store = load_faiss_vector_store(vector_store_path)
-    retriever = vector_store.as_retriever()
-    # Load QA chain for combining documents
-    llm = Ollama(model="llama3.2")
-    qa_chain = load_qa_chain(llm, chain_type="stuff")
-    qa_chain = RetrievalQA(retriever=retriever,combine_documents_chain=qa_chain)
-    return qa_chain
-
+from langchain_core.runnables import RunnablePassthrough
+import config  # Activates loading of environment variables
+from src.indexing.build_vector_store import VectorIndexBuilder 
+from src.core.orchestrator import RAGOrchestrator
 
 # Streamlit App
 st.title("RAG Chatbot with FAISS and LLaMA")
 st.write("Upload a PDF and ask questions based on its content.")
 
-
 uploaded_file = st.file_uploader("Upload your PDF file", type="pdf")
 
+# Check if the vector database already exists
+vector_db = VectorIndexBuilder()
+if vector_db.vectorstore is not None:
+    st.info("Vector database found. You can start asking questions.")
+    question = st.text_input("Ask a question about the existing database:")
+    if question:
+        st.info("Querying the database...")
+        rag_chain = RAGOrchestrator()
+        answer = rag_chain.invoke(question)
+        st.success(f"Answer: {answer}")
 
+# Handle file uploads
 if uploaded_file is not None:
-    pdf_path = f"uploaded/{uploaded_file.name}"
-    os.makedirs("uploaded", exist_ok=True)
-
+    pdf_path = f"res/uploaded/{uploaded_file.name}"
+    os.makedirs("res/uploaded", exist_ok=True)
 
     with open(pdf_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
 
-
-    text = extract_text_from_pdf(pdf_path)
-
-
-
-
-    st.info("Creating FAISS vector store...")
-    create_faiss_vector_store(text)
-
+    st.info("Creating Chroma vector store...")
+    vector_db.add_documents(pdf_path)
 
     st.info("Initializing chatbot...")
-    qa_chain = build_qa_chain()
-    st.success("Chatbot is ready!")
+    rag_chain = RAGOrchestrator()
+    st.success("Chatbot is ready! You can now ask questions.")
 
-
-if 'qa_chain' in locals():
     question = st.text_input("Ask a question about the uploaded PDF:")
     if question:
         st.info("Querying the document...")
-        answer = qa_chain.run(question)
+        answer = rag_chain.invoke(question)
         st.success(f"Answer: {answer}")
