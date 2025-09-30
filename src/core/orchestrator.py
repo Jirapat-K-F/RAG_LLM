@@ -15,7 +15,6 @@ class RAGOrchestrator:
         """Initialize the orchestrator with all components"""
         # Initialize LLM with Ollama using model "llama3.2"
         self.llm = Ollama(model="llama3.2")
-        self._setup_langsmith_tracking()
 
     def process_query(self, query: str) -> str:
         """
@@ -52,18 +51,5 @@ class RAGOrchestrator:
     def invoke(self, query: str) -> str:
         """Alias for process_query to match Runnable interface"""
         return self.process_query(query)
-
-    def _setup_langsmith_tracking(self):
-        """Initialize LangSmith tracing"""
-        os.environ.update({
-            'LANGCHAIN_TRACING_V2': os.getenv('LANGCHAIN_TRACING_V2'),
-            'LANGCHAIN_ENDPOINT': os.getenv('LANGCHAIN_ENDPOINT'),
-            'LANGCHAIN_API_KEY': os.getenv('LANGCHAIN_API_KEY'),
-            'LANGCHAIN_PROJECT': os.getenv('LANGCHAIN_PROJECT')
-        })
         
-    def _setup_components(self):
-        """Initialize all RAG components"""
-        pass
-
 
