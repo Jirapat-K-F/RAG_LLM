@@ -1,5 +1,5 @@
 # 📜 Script to create and save the vector index
-
+import time
 import os
 from typing import List
 from langchain.embeddings import HuggingFaceEmbeddings
@@ -133,6 +133,31 @@ class VectorIndexBuilder:
 
         return retrieved_data
     
+    def _clear_uploaded_files(self):
+        """
+        Clears all uploaded files from the uploaded directories.
+        """
+        uploaded_dirs = [
+            os.path.join(os.getcwd(), "uploaded"),
+            os.path.join(os.getcwd(), "res", "uploaded")
+        ]
+        
+        for uploaded_dir in uploaded_dirs:
+            if os.path.exists(uploaded_dir):
+                try:
+                    print(f"Clearing uploaded files from '{uploaded_dir}'...")
+                    for filename in os.listdir(uploaded_dir):
+                        file_path = os.path.join(uploaded_dir, filename)
+                        if os.path.isfile(file_path):
+                            os.remove(file_path)
+                            print(f"Deleted file: {filename}")
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path)
+                            print(f"Deleted directory: {filename}")
+                    print(f"Cleared all files from '{uploaded_dir}'")
+                except Exception as e:
+                    print(f"Error clearing uploaded files from '{uploaded_dir}': {e}")
+
     def clear_vectorstore(self):
         """
         Clears the entire vector store.
@@ -143,19 +168,57 @@ class VectorIndexBuilder:
 
         try:
             print("Clearing the entire vector store...")
-            # Delete all documents in the vector store
-            self.vectorstore.delete()  # Ensure this deletes all documents
+            # Retrieve all document IDs and delete them
+            all_ids = self.vectorstore.get()["ids"]
+            if all_ids:
+                self.vectorstore.delete(ids=all_ids)
+                print(f"Deleted {len(all_ids)} documents from the vector store.")
+            else:
+                print("No documents found in the vector store to delete.")
+
+            # Properly close the vector store connection
+            if hasattr(self.vectorstore, '_client') and self.vectorstore._client:
+                try:
+                    self.vectorstore._client.reset()
+                except:
+                    pass
+            
+            # Clear the vectorstore reference
             self.vectorstore = None
+
+            # Wait a moment for file handles to be released
+            time.sleep(2)
 
             # Optionally, remove the persist directory from disk
             if self.persist_directory and os.path.exists(self.persist_directory):
-                def handle_remove_error(func, path, exc_info):
-                    print(f"Error removing {path}: {exc_info}")
-                    os.chmod(path, 0o777)  # Change permissions and retry
-                    func(path)
+                max_retries = 5
+                retry_count = 0
+                
+                while retry_count < max_retries:
+                    try:
+                        shutil.rmtree(self.persist_directory)
+                        print(f"Removed persist directory '{self.persist_directory}' from disk.")
+                        break
+                    except PermissionError as e:
+                        retry_count += 1
+                        print(f"Attempt {retry_count}/{max_retries}: Permission error, waiting and retrying...")
+                        time.sleep(2)
+                        
+                        # Try to change permissions on all files in the directory
+                        for root, dirs, files in os.walk(self.persist_directory):
+                            for file in files:
+                                try:
+                                    file_path = os.path.join(root, file)
+                                    os.chmod(file_path, 0o777)
+                                except:
+                                    pass
+                        
+                        if retry_count == max_retries:
+                            print(f"Failed to remove persist directory after {max_retries} attempts: {e}")
+                            print("You may need to manually delete the directory or restart the application.")
 
-                shutil.rmtree(self.persist_directory, onerror=handle_remove_error)
-                print(f"Removed persist directory '{self.persist_directory}' from disk.")
+            # Also clear uploaded files
+            self._clear_uploaded_files()
 
             print("Vector store cleared successfully.")
         except Exception as e:

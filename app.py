@@ -1,9 +1,5 @@
 import streamlit as st
 import os
-from langchain import hub
-from langchain_core.output_parsers import StrOutputParser
-from langchain.llms import Ollama
-from langchain_core.runnables import RunnablePassthrough
 import config  # Activates loading of environment variables
 from src.indexing.build_vector_store import VectorIndexBuilder 
 from src.core.orchestrator import RAGOrchestrator
@@ -11,6 +7,22 @@ from src.core.orchestrator import RAGOrchestrator
 # Streamlit App
 st.title("RAG Chatbot with FAISS and LLaMA")
 st.write("Upload a PDF and ask questions based on its content.")
+
+# Display currently uploaded files
+st.subheader("Currently Uploaded Files")
+uploaded_dir = "res/uploaded"
+if os.path.exists(uploaded_dir) and os.listdir(uploaded_dir):
+    files = os.listdir(uploaded_dir)
+    st.write("📁 Files in database:")
+    for file in files:
+        file_path = os.path.join(uploaded_dir, file)
+        file_size = os.path.getsize(file_path)
+        file_size_mb = file_size / (1024 * 1024)
+        st.write(f"• {file} ({file_size_mb:.2f} MB)")
+else:
+    st.write("📂 No files currently uploaded")
+
+st.divider()
 
 uploaded_file = st.file_uploader("Upload your PDF file", type="pdf")
 
@@ -39,7 +51,7 @@ if uploaded_file is not None:
     st.info("Initializing chatbot...")
     rag_chain = RAGOrchestrator()
     st.success("Chatbot is ready! You can now ask questions.")
-
+    st.rerun()  # Refresh the page to show the new file in the list
     question = st.text_input("Ask a question about the uploaded PDF:")
     if question:
         st.info("Querying the document...")
@@ -50,6 +62,7 @@ if uploaded_file is not None:
 if st.button("Clear Vector Database"):
     if vector_db.vectorstore is not None:
         vector_db.clear_vectorstore()
-        st.success("Vector database cleared successfully.")
+        st.success("Vector database and uploaded files cleared successfully.")
+        st.rerun()  # Refresh the page to update the file list
     else:
         st.warning("No vector database found to clear.")
