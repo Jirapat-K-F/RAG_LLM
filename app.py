@@ -45,3 +45,11 @@ if uploaded_file is not None:
         st.info("Querying the document...")
         answer = rag_chain.invoke(question)
         st.success(f"Answer: {answer}")
+
+# Add a button to clear the vector database
+if st.button("Clear Vector Database"):
+    if vector_db.vectorstore is not None:
+        vector_db.clear_vectorstore()
+        st.success("Vector database cleared successfully.")
+    else:
+        st.warning("No vector database found to clear.")

@@ -7,6 +7,8 @@ from langchain_chroma import Chroma
 from src.indexing.utils.reader import Reader
 from langchain_community.llms import Ollama
 from src.indexing.utils.splitters import TextSplitter
+import shutil
+from langchain.schema import Document
 
 class VectorIndexBuilder:
     """
@@ -37,25 +39,26 @@ class VectorIndexBuilder:
         Adds new documents to the existing vector store.
         """
         documents = self.reader.read(documents_path)
-        splitted_doc = self.splitter.chunking_text(documents)
+        documents = [Document(page_content=doc) for doc in documents]
+        # splitted_doc = self.splitter.chunking_text(documents)
 
         documents_name = os.path.basename(documents_path)
-        chunk_ids = self.generateId(documents_name, splitted_doc)
+        chunk_ids = self.generateId(documents_name, len(documents))
 
         if self.vectorstore is None:
             print("Vector store not initialized. Creating a new one...")
-            self.create_from_documents(splitted_doc, chunk_ids)
+            self.create_from_documents(documents, chunk_ids)
             return
 
         print("Adding new documents to the vector store...")
-        
-        self.vectorstore.add_documents(documents=splitted_doc, ids=chunk_ids)
-        print(f"Successfully added {len(splitted_doc)} new document chunks.")
 
-    def create_from_documents(self, splitted_doc, chunk_ids):
+        self.vectorstore.add_documents(documents=documents, ids=chunk_ids)
+        print(f"Successfully added {len(documents)} new document chunks.")
+
+    def create_from_documents(self, documents, chunk_ids):
         print(f"Creating vector store in '{self.persist_directory}'...")
         self.vectorstore = Chroma.from_documents(
-            documents=splitted_doc,
+            documents=documents,
             embedding=self.embedding_function,
             persist_directory=self.persist_directory,
             ids=chunk_ids
@@ -113,11 +116,10 @@ class VectorIndexBuilder:
         else:
             print("No existing vector store found. A new one will be created.")
 
-    def generateId(source_id, chunks):
+    def generateId(self, source_id, num_chunk):
         # Generate custom IDs and add shared metadata
-        chunk_ids = [f"{source_id}-{i}" for i, _ in enumerate(chunks)]
-        for i, chunk in enumerate(chunks):
-            chunk.metadata["source_id"] = source_id
+        chunk_ids = [f"{source_id}-{i}" for i in range(num_chunk)]
+        return chunk_ids
 
     def retrieveIds(self, doc_path: str) -> str:
         """
@@ -130,3 +132,31 @@ class VectorIndexBuilder:
         retrieved_data = [id for id in self.vectorstore.get()['ids'] if base_id in id] # No arguments needed to get everything
 
         return retrieved_data
+    
+    def clear_vectorstore(self):
+        """
+        Clears the entire vector store.
+        """
+        if self.vectorstore is None:
+            print("Vector store not initialized. Cannot clear.")
+            return
+
+        try:
+            print("Clearing the entire vector store...")
+            # Delete all documents in the vector store
+            self.vectorstore.delete()  # Ensure this deletes all documents
+            self.vectorstore = None
+
+            # Optionally, remove the persist directory from disk
+            if self.persist_directory and os.path.exists(self.persist_directory):
+                def handle_remove_error(func, path, exc_info):
+                    print(f"Error removing {path}: {exc_info}")
+                    os.chmod(path, 0o777)  # Change permissions and retry
+                    func(path)
+
+                shutil.rmtree(self.persist_directory, onerror=handle_remove_error)
+                print(f"Removed persist directory '{self.persist_directory}' from disk.")
+
+            print("Vector store cleared successfully.")
+        except Exception as e:
+            print(f"An error occurred while clearing the vector store: {e}")
