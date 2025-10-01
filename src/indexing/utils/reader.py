@@ -1,11 +1,9 @@
-from langchain_core.output_parsers import StrOutputParser
 from PyPDF2 import PdfReader
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
 from docx import Document
 # We need to import the specific object types to check against
 from docx.document import Document as DocumentObject
 from docx.table import Table
+import pandas as pd
 
 class Reader:
     def __init__(self):
@@ -17,6 +15,8 @@ class Reader:
             return PDFReader()
         elif file.endswith(".docx"):
             return DocxReader()
+        elif file.endswith(".xlsx") or file.endswith(".xls"):
+            return excelReader()
         else:
             raise ValueError("Unsupported file type")
 
@@ -67,11 +67,16 @@ class DocxReader(Reader):
         except Exception as e:
             print(f"An error occurred: {e}")
     
-# class excelReader(Reader):
-#     def __init__(self):
-#         pass
+class excelReader(Reader):
+    def __init__(self):
+        pass
 
-#     def read(self, file_path: str) -> str:
-#         df = pd.read_excel(file_path)
-#         text = df.to_string()
-#         return text
+    def read(self, file_path: str) -> str:
+        all_sheets = pd.read_excel(file_path, sheet_name=None)
+        text = ""
+        for sheet_name, df in all_sheets.items():
+            text += "="*50 + "\n"
+            text += f"  SHEET NAME: {sheet_name} ".center(50, "=") + "\n"
+            text += "="*50 + "\n"
+            text += df.to_string() + "\n\n"
+        return text
