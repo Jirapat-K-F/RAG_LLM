@@ -7,6 +7,7 @@ from langchain_chroma import Chroma
 from src.indexing.utils.reader import Reader
 from langchain_community.llms import Ollama
 from src.indexing.utils.splitters import TextSplitter
+from src.indexing.utils.converter import Converter
 import shutil
 from langchain.schema import Document
 
@@ -32,6 +33,7 @@ class VectorIndexBuilder:
         self._load_vectorstore()
         self.reader = Reader(self.llm)
         self.splitter = TextSplitter()
+        self.converter = Converter(self.llm)
         self.K = 3  # Number of top documents to retrieve
 
     def add_documents(self, documents_path: str):
@@ -39,8 +41,11 @@ class VectorIndexBuilder:
         Adds new documents to the existing vector store.
         """
         documents = self.reader.read(documents_path)
+        #transform raw text to Document json type----------------------------------------------------
+        # documents = self.converter.preprocess(documents)
+        #--------------------------------------------------------------------------------------------
         documents = [Document(page_content=doc) for doc in documents]
-        # splitted_doc = self.splitter.chunking_text(documents)
+        splitted_doc = self.splitter.chunking_text(documents)
 
         documents_name = os.path.basename(documents_path)
         chunk_ids = self.generateId(documents_name, len(documents))
