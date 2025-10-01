@@ -28,7 +28,7 @@ class VectorIndexBuilder:
         self.vectorstore = None
         # Load the vector store on initialization if it already exists
         self._load_vectorstore()
-        self.reader = Reader(self.llm)
+        self.reader = Reader()
         self.splitter = TextSplitter()
         self.K = 3  # Number of top documents to retrieve
 
@@ -36,7 +36,7 @@ class VectorIndexBuilder:
         """
         Adds new documents to the existing vector store.
         """
-        documents = self.reader.read(documents_path)
+        documents = self.reader.get_reader(documents_path).read(documents_path)
         splitted_doc = self.splitter.chunking_text(documents)
 
         if self.vectorstore is None:
