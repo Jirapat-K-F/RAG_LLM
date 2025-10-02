@@ -1,22 +1,30 @@
-from langchain_core.output_parsers import StrOutputParser
 from PyPDF2 import PdfReader
-from langchain_community.llms import Ollama
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from streamlit import text
+from docx import Document
+# We need to import the specific object types to check against
+from docx.document import Document as DocumentObject
+from docx.table import Table
+import pandas as pd
 
 class Reader:
+    def __init__(self):
+        pass
+    
+    @staticmethod
+    def get_reader(file):
+        if file.endswith(".pdf"):
+            return PDFReader()
+        elif file.endswith(".docx"):
+            return DocxReader()
+        elif file.endswith(".xlsx") or file.endswith(".xls"):
+            return excelReader()
+        else:
+            raise ValueError("Unsupported file type")
 
-    def __init__(self, llm):
-        self.llm = llm
+    def read(self, file_path: str) -> str:
+        pass
+    
 
-        # Translation of the prompt:
-        # "You are an expert in the Thai language. Please correct the following sentence to be grammatically correct and fix any spelling errors.
-        # Incorrect sentence: '{input_text}'
-        # Please respond with only the corrected sentence."
-        self.prompt_template_str = """คุณคือผู้เชี่ยวชาญด้านภาษาไทย โปรดแก้ไขประโยคต่อไปนี้ให้ถูกต้องตามหลักไวยากรณ์และแก้ไขคำที่สะกดผิด
-        ประโยคที่ผิด: "{input_text}"
-        กรุณาตอบเฉพาะประโยคที่แก้ไขแล้วเท่านั้น"""
+class PDFReader(Reader):
 
     def read(self, file_path: str) -> list[str]:
         reader = PdfReader(file_path)
@@ -25,34 +33,50 @@ class Reader:
             text.append(page.extract_text())
         return text
     
-    # this function will read and correct the text
-    # it also very slow and cost a lot of tokens
-    def advanceRead(self, file_path: str, llm) -> str: 
-        text = self.read(file_path)
-        advance_text = self.correct_text(text) #correct the thai language text
-        return advance_text
+class DocxReader(Reader):
 
-    def correct_text(self, text: str) -> str:
-        # 1. Instantiate the Ollama Chat Model
-        prompt = ChatPromptTemplate.from_template(self.prompt_template_str)
-
-        # 3. Define an Output Parser
-        # StrOutputParser() simply takes the model's output and converts it into a plain string.
-        output_parser = StrOutputParser()
-
-        # 4. Build the Chain using LangChain Expression Language (LCEL)
-        # This pipes the components together: the prompt is sent to the model,
-        # and the model's output is sent to the parser.
-        chain = prompt | self.llm | output_parser
-
-        # --- 5. Invoke the Chain with your input text ---
-        # print(f"Sending imperfect text to LangChain: '{text}'")
-
+    def read(self, file_path: str) -> str:
+        """
+        Reads paragraphs and tables from a .docx file and prints them in sequential order.
+        """
         try:
-            # The input is a dictionary where the key matches the variable in your prompt template.
-            corrected_text = chain.invoke({"input_text": text})
-            return corrected_text
+            doc = Document(file_path)
+            full_content = ""
+
+            # Pointers to track our position in the paragraphs and tables lists
+            para_idx, table_idx = 0, 0
+
+            # Iterate through the direct children of the document's body
+            for block in doc.element.body:
+                # Check if the block is a paragraph element
+                if block.tag.endswith('p'):
+                    paragraph = doc.paragraphs[para_idx]
+                    full_content += paragraph.text
+                    para_idx += 1
+                # Check if the block is a table element
+                elif block.tag.endswith('tbl'):
+                    table = doc.tables[table_idx]
+                    # Iterate through table rows and cells
+                    for row in table.rows:
+                        row_text = "\t|\t".join(cell.text for cell in row.cells)
+                        full_content += f"\t{row_text}"
+                    table_idx += 1
+            return full_content
+        except FileNotFoundError:
+            print(f"Error: The file '{file_path}' was not found.")
         except Exception as e:
-            print(f"\nAn error occurred!")
-            print("Please ensure the Ollama application is running and you have pulled the 'llama3' model.")
-            print(f"Error details: {e}")
+            print(f"An error occurred: {e}")
+    
+class excelReader(Reader):
+    def __init__(self):
+        pass
+
+    def read(self, file_path: str) -> str:
+        all_sheets = pd.read_excel(file_path, sheet_name=None)
+        text = ""
+        for sheet_name, df in all_sheets.items():
+            text += "="*50 + "\n"
+            text += f"  SHEET NAME: {sheet_name} ".center(50, "=") + "\n"
+            text += "="*50 + "\n"
+            text += df.to_string() + "\n\n"
+        return text
