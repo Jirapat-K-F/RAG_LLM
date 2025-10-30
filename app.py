@@ -3,6 +3,10 @@ import os
 import config  # Activates loading of environment variables
 from src.indexing.build_vector_store import VectorIndexBuilder 
 from src.core.orchestrator import RAGOrchestrator
+from datetime import datetime
+
+# Print a short message to the terminal on every Streamlit rerun so you can see reloads
+print(f"[streamlit] reload at {datetime.now().isoformat()} (PID={os.getpid()})")
 
 # Streamlit App
 st.title("RAG Chatbot with FAISS and LLaMA")

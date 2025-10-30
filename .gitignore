@@ -1,5 +1,6 @@
 /uploaded
 /faiss_index
+run_add_documents.py
 res/
 *.png
 .env

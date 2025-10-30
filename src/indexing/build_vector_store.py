@@ -40,12 +40,27 @@ class VectorIndexBuilder:
         """
         Adds new documents to the existing vector store.
         """
-        documents = self.reader.get_reader(documents_path).read(documents_path)
-        #transform raw text to Document json type----------------------------------------------------
-        # documents = self.converter.preprocess(documents)
-        #--------------------------------------------------------------------------------------------
-        documents = [Document(page_content=doc) for doc in documents]
-        splitted_doc = self.splitter.chunking_text(documents)
+        # Read raw content from the file. The reader may return either a
+        # single string (for .docx/.xlsx) or a list of strings (for PDFs/pages).
+        raw = self.reader.get_reader(documents_path).read(documents_path)
+
+        # Normalize into a list of text chunks (strings)
+        if isinstance(raw, list):
+            texts = raw
+        else:
+            texts = [raw]
+
+        # Convert each text chunk into a langchain Document, then split into
+        # smaller chunks using the TextSplitter. chunking_text returns a list
+        # of Document objects.
+        documents: list[Document] = []
+        for text in texts:
+            if not text:
+                continue
+            # splitter.chunking_text expects a single string; it returns
+            # a list of Document objects representing chunks.
+            splitted = self.splitter.chunking_text(text)
+            documents.extend(splitted)
 
         documents_name = os.path.basename(documents_path)
         chunk_ids = self.generateId(documents_name, len(documents))
@@ -70,7 +85,7 @@ class VectorIndexBuilder:
         )
         print("Vector store created successfully.")
 
-    def retrieve(self, query: str, search_type="similarity") -> List[str]:
+    def retrieve(self, query: str, search_type="similarity_score_threshold") -> List[str]:
         """
         Load and extract text from documents
         """
@@ -81,7 +96,7 @@ class VectorIndexBuilder:
             print("Vector store loaded successfully.")
         retriever = self.vectorstore.as_retriever(
             search_type=search_type,
-            search_kwargs={"k": self.K}
+            search_kwargs={'score_threshold': 0.5, "k": self.K}
         )
         # docs = retriever.get_relevant_documents(query)
         return retriever
@@ -104,9 +119,9 @@ class VectorIndexBuilder:
         if self.vectorstore is None:
             print("Vector store not initialized. Cannot delete documents.")
             return
-        doc_id = self.retrieveIds(doc_path)
+        doc_ids = self.retrieveIds(doc_path)
         print(f"Deleting documents with IDs: {doc_ids}")
-        self.vectorstore.delete(doc_ids)
+        self.vectorstore.delete(ids=doc_ids)
         print("Documents deleted successfully.")    
 
     def _load_vectorstore(self):
