@@ -26,11 +26,11 @@ class Reader:
 
 class PDFReader(Reader):
 
-    def read(self, file_path: str) -> str:
+    def read(self, file_path: str) -> list[str]:
         reader = PdfReader(file_path)
-        text = ""
+        text = []
         for page in (reader.pages):
-            text += page.extract_text()
+            text.append(page.extract_text())
         return text
     
 class DocxReader(Reader):

@@ -19,7 +19,7 @@ class TextSplitter:
             model_name: Embedding model for similarity calculation
             similarity_threshold: Threshold for semantic similarity
         """
-        self.CHUNK_SIZE = 2000
+        self.CHUNK_SIZE = 5000
         self.CHUNK_OVERLAP = 500
 
     def chunking_text(self, text) -> List[str]:
