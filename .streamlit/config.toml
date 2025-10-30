@@ -1,0 +1,7 @@
+[server]
+runOnSave = true
+# Use the default file watcher; set to "poll" if you experience issues on network drives
+fileWatcherType = "auto"
+
+# Optional: increase the script rerun debounce (seconds)
+# runOnSaveDebounce = 0.1
